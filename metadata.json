@@ -1,0 +1,6 @@
+{
+  "name": "Petualangan Belajar Kiko & Kiki",
+  "description": "Game edukasi interaktif ceria untuk anak usia 3-6 tahun bersama Kiko si Rubah dan Kiki si Kelinci: mengenal huruf, berhitung angka, bentuk, warna, dan emosi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

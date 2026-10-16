@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-fredoka: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-quicksand: "Quicksand", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer utilities {
+  @keyframes floatSlow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(1deg); }
+  }
+
+  @keyframes wiggleSlow {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  @keyframes pulseStar {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.6)); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.9)); }
+  }
+
+  .animate-float-slow {
+    animation: floatSlow 4s ease-in-out infinite;
+  }
+
+  .animate-wiggle-slow {
+    animation: wiggleSlow 2.5s ease-in-out infinite;
+  }
+
+  .animate-pulse-star {
+    animation: pulseStar 1.8s ease-in-out infinite;
+  }
+}

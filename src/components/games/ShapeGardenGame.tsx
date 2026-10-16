@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ArrowRight, RotateCcw, Palette } from 'lucide-react';
 import { sound } from '../../utils/audio';
 import { MascotSvg } from '../MascotSvg';
+import { DifficultyLevel } from '../../types/game';
+import { DifficultySelector } from '../DifficultySelector';
 
 interface ShapeGardenGameProps {
+  difficulty: DifficultyLevel;
+  onChangeDifficulty: (diff: DifficultyLevel) => void;
   onActivityComplete: (item: string) => void;
   onBackToMap: () => void;
 }
@@ -11,118 +15,85 @@ interface ShapeGardenGameProps {
 interface ShapeItem {
   id: string;
   name: string;
-  svgPath: string;
   color: string;
-  borderColor: string;
   hint: string;
 }
 
-const SHAPES: ShapeItem[] = [
-  {
-    id: 'circle',
-    name: 'Lingkaran',
-    svgPath: 'circle',
-    color: 'bg-rose-500',
-    borderColor: 'border-rose-300',
-    hint: 'Bentuk bulat seperti koin dan matahari!',
-  },
-  {
-    id: 'triangle',
-    name: 'Segitiga',
-    svgPath: 'triangle',
-    color: 'bg-amber-400',
-    borderColor: 'border-amber-300',
-    hint: 'Punya 3 sudut lancip seperti atap rumah!',
-  },
-  {
-    id: 'square',
-    name: 'Persegi',
-    svgPath: 'square',
-    color: 'bg-sky-500',
-    borderColor: 'border-sky-300',
-    hint: 'Punya 4 sisi sama panjang seperti jendela!',
-  },
-  {
-    id: 'star',
-    name: 'Bintang',
-    svgPath: 'star',
-    color: 'bg-yellow-400',
-    borderColor: 'border-yellow-200',
-    hint: 'Bercahaya indah di langit malam!',
-  },
-  {
-    id: 'heart',
-    name: 'Hati',
-    svgPath: 'heart',
-    color: 'bg-pink-500',
-    borderColor: 'border-pink-300',
-    hint: 'Tanda cinta dan kasih sayang!',
-  },
-];
+const ALL_SHAPES: Record<DifficultyLevel, ShapeItem[]> = {
+  EASY: [
+    { id: 'circle', name: 'Lingkaran', color: 'bg-rose-500', hint: 'Bulat seperti roda dan matahari!' },
+    { id: 'square', name: 'Persegi', color: 'bg-sky-500', hint: 'Punya 4 sisi sama seperti jendela!' },
+    { id: 'triangle', name: 'Segitiga', color: 'bg-amber-400', hint: 'Punya 3 sudut lancip seperti atap!' },
+  ],
+  MEDIUM: [
+    { id: 'circle', name: 'Lingkaran', color: 'bg-rose-500', hint: 'Bulat seperti roda dan matahari!' },
+    { id: 'square', name: 'Persegi', color: 'bg-sky-500', hint: 'Punya 4 sisi sama seperti jendela!' },
+    { id: 'triangle', name: 'Segitiga', color: 'bg-amber-400', hint: 'Punya 3 sudut lancip seperti atap!' },
+    { id: 'star', name: 'Bintang', color: 'bg-yellow-400', hint: 'Bercahaya indah di langit malam!' },
+    { id: 'heart', name: 'Hati', color: 'bg-pink-500', hint: 'Tanda cinta dan kebaikan hati!' },
+  ],
+  HARD: [
+    { id: 'circle', name: 'Lingkaran', color: 'bg-rose-500', hint: 'Bulat seperti roda dan matahari!' },
+    { id: 'square', name: 'Persegi', color: 'bg-sky-500', hint: 'Punya 4 sisi sama seperti jendela!' },
+    { id: 'triangle', name: 'Segitiga', color: 'bg-amber-400', hint: 'Punya 3 sudut lancip seperti atap!' },
+    { id: 'star', name: 'Bintang', color: 'bg-yellow-400', hint: 'Bercahaya indah di langit malam!' },
+    { id: 'heart', name: 'Hati', color: 'bg-pink-500', hint: 'Tanda cinta dan kebaikan hati!' },
+    { id: 'diamond', name: 'Ketupat', color: 'bg-emerald-500', hint: 'Bentuk belah ketupat lezat!' },
+    { id: 'rectangle', name: 'Persegi Panjang', color: 'bg-purple-500', hint: 'Panjang seperti pintu rumah!' },
+  ],
+};
 
-const COLOR_BUCKETS = [
-  {
-    id: 'red',
-    name: 'Merah',
-    bg: 'bg-rose-500',
-    border: 'border-rose-400',
-    text: 'text-rose-900',
-    items: ['🍎 Apel', '🍓 Stroberi', '🌹 Mawar', '🚗 Mobil'],
-  },
-  {
-    id: 'blue',
-    name: 'Biru',
-    bg: 'bg-sky-500',
-    border: 'border-sky-400',
-    text: 'text-sky-900',
-    items: ['🌊 Laut', '🐳 Paus', '🫐 Bluberi', '🧢 Topi'],
-  },
-  {
-    id: 'yellow',
-    name: 'Kuning',
-    bg: 'bg-amber-400',
-    border: 'border-amber-300',
-    text: 'text-amber-900',
-    items: ['🍌 Pisang', '☀️ Matahari', '🌻 Bunga', '🧀 Keju'],
-  },
-  {
-    id: 'green',
-    name: 'Hijau',
-    bg: 'bg-emerald-500',
-    border: 'border-emerald-400',
-    text: 'text-emerald-900',
-    items: ['🍃 Daun', '🐸 Katak', '🥒 Timun', '🥑 Alpukat'],
-  },
-];
+const ALL_BUCKETS: Record<DifficultyLevel, { id: string; name: string; bg: string; border: string; items: string[] }[]> = {
+  EASY: [
+    { id: 'red', name: 'Merah', bg: 'bg-rose-500', border: 'border-rose-400', items: ['🍎 Apel', '🍓 Stroberi'] },
+    { id: 'yellow', name: 'Kuning', bg: 'bg-amber-400', border: 'border-amber-300', items: ['🍌 Pisang', '☀️ Matahari'] },
+  ],
+  MEDIUM: [
+    { id: 'red', name: 'Merah', bg: 'bg-rose-500', border: 'border-rose-400', items: ['🍎 Apel', '🍓 Stroberi', '🚗 Mobil'] },
+    { id: 'blue', name: 'Biru', bg: 'bg-sky-500', border: 'border-sky-400', items: ['🌊 Laut', '🐳 Paus', '🧢 Topi'] },
+    { id: 'yellow', name: 'Kuning', bg: 'bg-amber-400', border: 'border-amber-300', items: ['🍌 Pisang', '☀️ Matahari', '🌻 Bunga'] },
+    { id: 'green', name: 'Hijau', bg: 'bg-emerald-500', border: 'border-emerald-400', items: ['🍃 Daun', '🐸 Katak', '🥑 Alpukat'] },
+  ],
+  HARD: [
+    { id: 'red', name: 'Merah', bg: 'bg-rose-500', border: 'border-rose-400', items: ['🍎 Apel', '🍓 Stroberi', '🌹 Mawar', '🚒 Pemadam'] },
+    { id: 'blue', name: 'Biru', bg: 'bg-sky-500', border: 'border-sky-400', items: ['🌊 Laut', '🐳 Paus', '🫐 Bluberi', '🎽 Rompi'] },
+    { id: 'yellow', name: 'Kuning', bg: 'bg-amber-400', border: 'border-amber-300', items: ['🍌 Pisang', '☀️ Matahari', '🌻 Bunga', '🧀 Keju'] },
+    { id: 'green', name: 'Hijau', bg: 'bg-emerald-500', border: 'border-emerald-400', items: ['🍃 Daun', '🐸 Katak', '🥒 Timun', '🥑 Alpukat'] },
+    { id: 'purple', name: 'Ungu', bg: 'bg-purple-500', border: 'border-purple-400', items: ['🍇 Anggur', '🍆 Terong', '🔮 Kristal', '☂️ Payung'] },
+  ],
+};
 
 export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
+  difficulty,
+  onChangeDifficulty,
   onActivityComplete,
   onBackToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<'MATCH' | 'COLORS' | 'TOWER'>('MATCH');
 
-  // Match shape state
+  const shapesList = ALL_SHAPES[difficulty];
   const [matchedShapes, setMatchedShapes] = useState<string[]>([]);
   const [selectedShapeToPlace, setSelectedShapeToPlace] = useState<ShapeItem | null>(null);
 
-  // Color basket sort state
-  const [activeColorBucket, setActiveColorBucket] = useState(COLOR_BUCKETS[0]);
-  const [sortedItems, setSortedItems] = useState<{ [key: string]: string[] }>({
-    red: [],
-    blue: [],
-    yellow: [],
-    green: [],
-  });
+  const bucketsList = ALL_BUCKETS[difficulty];
+  const [activeColorBucket, setActiveColorBucket] = useState(bucketsList[0]);
 
   // Tower builder state
   const [towerBlocks, setTowerBlocks] = useState<{ color: string; width: string; label: string }[]>([
-    { color: 'bg-emerald-500', width: 'w-48', label: 'Pondasi Luas' },
+    { color: 'bg-emerald-500', width: 'w-48', label: 'Pondasi Istana' },
   ]);
+
+  useEffect(() => {
+    setMatchedShapes([]);
+    setSelectedShapeToPlace(null);
+    setActiveColorBucket(bucketsList[0]);
+    setTowerBlocks([{ color: 'bg-emerald-500', width: 'w-48', label: 'Pondasi Istana' }]);
+  }, [difficulty]);
 
   // Handle shape slot click
   const handlePlaceInSlot = (targetShapeId: string) => {
     if (!selectedShapeToPlace) {
-      sound.speak('Pilih bentuk di bawah dulu ya teman!');
+      sound.speak('Pilih bentuk di bawah terlebih dahulu ya teman!');
       return;
     }
 
@@ -141,7 +112,8 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
 
   // Add block to tower
   const handleAddTowerBlock = (block: { color: string; width: string; label: string }) => {
-    if (towerBlocks.length >= 7) {
+    const maxLimit = difficulty === 'EASY' ? 4 : difficulty === 'MEDIUM' ? 7 : 10;
+    if (towerBlocks.length >= maxLimit) {
       sound.playFanfare();
       sound.speak('Wah hebat! Menaramu sudah sangat tinggi dan kokoh!');
       return;
@@ -152,7 +124,7 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
     onActivityComplete('Menara Bentuk');
   };
 
-  const renderShapeIcon = (shapeId: string, className = 'w-12 h-12') => {
+  const renderShapeIcon = (shapeId: string, className = 'w-10 h-10') => {
     switch (shapeId) {
       case 'circle':
         return <div className={`rounded-full ${className}`} />;
@@ -162,9 +134,7 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
         return (
           <div
             className={className}
-            style={{
-              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-            }}
+            style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}
           />
         );
       case 'star':
@@ -178,7 +148,16 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
           />
         );
       case 'heart':
-        return <span className="text-4xl">❤️</span>;
+        return <span className="text-3xl">❤️</span>;
+      case 'diamond':
+        return (
+          <div
+            className={className}
+            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
+          />
+        );
+      case 'rectangle':
+        return <div className={`w-14 h-8 rounded-lg ${className.includes('bg-') ? '' : 'bg-purple-500'}`} />;
       default:
         return null;
     }
@@ -187,7 +166,7 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 flex flex-col items-center">
       {/* Zone Header Banner */}
-      <div className="w-full bg-linear-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
+      <div className="w-full bg-linear-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 text-center sm:text-left">
           <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-3xl shadow-inner">
             🎨
@@ -208,6 +187,14 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
           size="sm"
           showSpeech
           speechText="Yuk kenali bentuknya!"
+        />
+      </div>
+
+      {/* Difficulty Selector Bar */}
+      <div className="w-full flex justify-center mb-4">
+        <DifficultySelector
+          currentDifficulty={difficulty}
+          onChangeDifficulty={onChangeDifficulty}
         />
       </div>
 
@@ -257,8 +244,17 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
       {/* TAB 1: MATCH GEOMETRIC SHAPES */}
       {activeTab === 'MATCH' && (
         <div className="w-full max-w-3xl bg-white/95 border-3 border-purple-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
-          <div className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200 mb-2">
-            Pilih bentuk di bawah, lalu ketuk bingkai kayu yang cocok!
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-xs font-bold text-purple-800 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+              {difficulty === 'EASY'
+                ? '3 Bentuk Dasar'
+                : difficulty === 'MEDIUM'
+                ? '5 Bentuk Ceria'
+                : '7 Bentuk Geometri Lengkap'}
+            </span>
+            <span className="text-xs font-bold text-slate-500 font-mono">
+              {matchedShapes.length} / {shapesList.length} Terpasang
+            </span>
           </div>
 
           <h3 className="text-2xl font-black text-slate-800 mt-2 mb-6">
@@ -266,8 +262,16 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
           </h3>
 
           {/* Wooden Puzzle Board Slots */}
-          <div className="w-full grid grid-cols-3 sm:grid-cols-5 gap-3 sm:gap-4 p-5 bg-amber-100 rounded-3xl border-4 border-amber-300 shadow-inner">
-            {SHAPES.map((shape) => {
+          <div
+            className={`w-full grid gap-3 sm:gap-4 p-5 bg-amber-100 rounded-3xl border-4 border-amber-300 shadow-inner ${
+              difficulty === 'EASY'
+                ? 'grid-cols-3'
+                : difficulty === 'MEDIUM'
+                ? 'grid-cols-3 sm:grid-cols-5'
+                : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-7'
+            }`}
+          >
+            {shapesList.map((shape) => {
               const isMatched = matchedShapes.includes(shape.id);
               return (
                 <div
@@ -282,16 +286,16 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
                   {isMatched ? (
                     <div className="flex flex-col items-center">
                       <div className={shape.color + ' p-2 rounded-xl text-white'}>
-                        {renderShapeIcon(shape.id, 'w-10 h-10 bg-white/90')}
+                        {renderShapeIcon(shape.id, 'w-8 h-8 sm:w-10 sm:h-10 bg-white/90')}
                       </div>
-                      <span className="text-xs font-black text-emerald-800 mt-1">
+                      <span className="text-[11px] font-black text-emerald-800 mt-1 truncate max-w-full">
                         {shape.name}
                       </span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center opacity-40">
-                      {renderShapeIcon(shape.id, 'w-10 h-10 bg-amber-800')}
-                      <span className="text-[10px] font-bold text-amber-900 mt-1">
+                      {renderShapeIcon(shape.id, 'w-8 h-8 sm:w-10 sm:h-10 bg-amber-800')}
+                      <span className="text-[10px] font-bold text-amber-900 mt-1 truncate max-w-full">
                         {shape.name}
                       </span>
                     </div>
@@ -308,8 +312,8 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
                 ? `Bentuk dipilih: ${selectedShapeToPlace.name}! Sekarang ketuk bingkainya di atas!`
                 : 'Ketuk salah satu bentuk untuk dipilih:'}
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {SHAPES.filter((s) => !matchedShapes.includes(s.id)).map((s) => {
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              {shapesList.filter((s) => !matchedShapes.includes(s.id)).map((s) => {
                 const isSelected = selectedShapeToPlace?.id === s.id;
                 return (
                   <button
@@ -319,14 +323,14 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
                       sound.playPop();
                       sound.speak(s.name);
                     }}
-                    className={`p-3 rounded-2xl border-3 flex flex-col items-center gap-1 shadow-sm transition-transform cursor-pointer ${
+                    className={`p-2.5 sm:p-3 rounded-2xl border-3 flex flex-col items-center gap-1 shadow-sm transition-transform cursor-pointer ${
                       isSelected
                         ? 'border-purple-600 bg-purple-100 scale-110 shadow-lg'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                     }`}
                   >
                     <div className={`${s.color} p-2 rounded-xl text-white`}>
-                      {renderShapeIcon(s.id, 'w-10 h-10 bg-white')}
+                      {renderShapeIcon(s.id, 'w-8 h-8 sm:w-10 sm:h-10 bg-white')}
                     </div>
                     <span className="text-xs font-black text-slate-700">{s.name}</span>
                   </button>
@@ -335,7 +339,7 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
             </div>
           </div>
 
-          {matchedShapes.length === SHAPES.length && (
+          {matchedShapes.length === shapesList.length && (
             <div className="mt-6 flex flex-col items-center gap-2 animate-in zoom-in-95">
               <div className="flex items-center gap-2 text-emerald-600 font-black text-lg">
                 <Check className="w-6 h-6" />
@@ -367,8 +371,8 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
           </h3>
 
           {/* Color Baskets Selectors */}
-          <div className="flex justify-center gap-2 sm:gap-4 mb-6">
-            {COLOR_BUCKETS.map((b) => (
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6">
+            {bucketsList.map((b) => (
               <button
                 key={b.id}
                 onClick={() => {
@@ -470,9 +474,19 @@ export const ShapeGardenGame: React.FC<ShapeGardenGameProps> = ({
               >
                 + Puncak Segitiga
               </button>
+              {difficulty !== 'EASY' && (
+                <button
+                  onClick={() =>
+                    handleAddTowerBlock({ color: 'bg-purple-500', width: 'w-36', label: 'Balok Ungu' })
+                  }
+                  className="py-2 px-3 bg-purple-500 text-white font-bold text-xs rounded-xl shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  + Balok Ungu
+                </button>
+              )}
               <button
                 onClick={() => {
-                  setTowerBlocks([{ color: 'bg-emerald-500', width: 'w-48', label: 'Pondasi Luas' }]);
+                  setTowerBlocks([{ color: 'bg-emerald-500', width: 'w-48', label: 'Pondasi Istana' }]);
                   sound.playPop();
                 }}
                 className="py-2 px-3 bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-300 cursor-pointer"

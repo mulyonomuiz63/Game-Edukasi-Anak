@@ -24,6 +24,7 @@ const DEFAULT_PROFILE: ChildProfile = {
   age: 4,
   avatar: 'kiko',
   favoriteColor: '#F59E0B',
+  difficulty: 'MEDIUM',
 };
 
 const DEFAULT_STATS: LearningStats = {
@@ -53,7 +54,14 @@ export default function App() {
   const [profile, setProfile] = useState<ChildProfile>(() => {
     try {
       const saved = localStorage.getItem('kiko_kiki_profile');
-      return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.difficulty) {
+          parsed.difficulty = parsed.age <= 3 ? 'EASY' : parsed.age >= 6 ? 'HARD' : 'MEDIUM';
+        }
+        return parsed;
+      }
+      return DEFAULT_PROFILE;
     } catch {
       return DEFAULT_PROFILE;
     }
@@ -149,6 +157,16 @@ export default function App() {
     setIsMuted(newState);
   };
 
+  // Difficulty change handler
+  const handleDifficultyChange = (diff: import('./types/game').DifficultyLevel) => {
+    setProfile((prev) => ({
+      ...prev,
+      difficulty: diff,
+    }));
+  };
+
+  const activeDifficulty = profile.difficulty || 'MEDIUM';
+
   // Award stars and update learning progress
   const awardActivity = (type: 'letter' | 'number' | 'shape' | 'color' | 'emotion', val: string | number) => {
     sound.playSparkle();
@@ -212,6 +230,8 @@ export default function App() {
         currentScreen={currentScreen}
         starsCount={stats.starsCount}
         profile={profile}
+        difficulty={activeDifficulty}
+        onChangeDifficulty={handleDifficultyChange}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
         onGoHome={() => setCurrentScreen('WORLD_MAP')}
@@ -233,6 +253,8 @@ export default function App() {
         {currentScreen === 'WORLD_MAP' && (
           <WorldMap
             stats={stats}
+            difficulty={activeDifficulty}
+            onChangeDifficulty={handleDifficultyChange}
             onSelectZone={(zone) => setCurrentScreen(zone)}
             onOpenStickers={() => setIsStickersOpen(true)}
           />
@@ -240,6 +262,8 @@ export default function App() {
 
         {currentScreen === 'ZONE_ABC' && (
           <AbcForestGame
+            difficulty={activeDifficulty}
+            onChangeDifficulty={handleDifficultyChange}
             onActivityComplete={(letter) => awardActivity('letter', letter)}
             onBackToMap={() => setCurrentScreen('WORLD_MAP')}
           />
@@ -247,6 +271,8 @@ export default function App() {
 
         {currentScreen === 'ZONE_NUMBERS' && (
           <NumberIslandGame
+            difficulty={activeDifficulty}
+            onChangeDifficulty={handleDifficultyChange}
             onActivityComplete={(num) => awardActivity('number', num)}
             onBackToMap={() => setCurrentScreen('WORLD_MAP')}
           />
@@ -254,6 +280,8 @@ export default function App() {
 
         {currentScreen === 'ZONE_SHAPES' && (
           <ShapeGardenGame
+            difficulty={activeDifficulty}
+            onChangeDifficulty={handleDifficultyChange}
             onActivityComplete={(shape) => awardActivity('shape', shape)}
             onBackToMap={() => setCurrentScreen('WORLD_MAP')}
           />
@@ -261,6 +289,8 @@ export default function App() {
 
         {currentScreen === 'ZONE_EMOTION' && (
           <EmotionAdventureGame
+            difficulty={activeDifficulty}
+            onChangeDifficulty={handleDifficultyChange}
             onActivityComplete={(em) => awardActivity('emotion', em)}
             onBackToMap={() => setCurrentScreen('WORLD_MAP')}
           />

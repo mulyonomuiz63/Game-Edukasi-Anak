@@ -7,11 +7,14 @@ export type ScreenType =
   | 'ZONE_EMOTION'
   | 'STICKER_ALBUM';
 
+export type DifficultyLevel = 'EASY' | 'MEDIUM' | 'HARD';
+
 export interface ChildProfile {
   name: string;
   age: number; // 3, 4, 5, or 6
   avatar: 'kiko' | 'kiki' | 'bear' | 'cat' | 'lion' | 'panda';
   favoriteColor: string;
+  difficulty: DifficultyLevel;
 }
 
 export interface LearningStats {

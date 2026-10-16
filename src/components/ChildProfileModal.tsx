@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, Heart, Sparkles } from 'lucide-react';
 import { sound } from '../utils/audio';
-import { ChildProfile } from '../types/game';
+import { ChildProfile, DifficultyLevel } from '../types/game';
 
 interface ChildProfileModalProps {
   isOpen: boolean;
@@ -28,8 +28,20 @@ export const ChildProfileModal: React.FC<ChildProfileModalProps> = ({
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(profile.age);
   const [avatar, setAvatar] = useState(profile.avatar);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(
+    profile.difficulty || (profile.age <= 3 ? 'EASY' : profile.age >= 6 ? 'HARD' : 'MEDIUM')
+  );
 
   if (!isOpen) return null;
+
+  const handleAgeChange = (a: number) => {
+    setAge(a);
+    sound.playPop();
+    sound.speak(`Usia ${a} tahun!`);
+    // auto-adjust suggested difficulty
+    const suggested: DifficultyLevel = a <= 3 ? 'EASY' : a >= 6 ? 'HARD' : 'MEDIUM';
+    setDifficulty(suggested);
+  };
 
   const handleSave = () => {
     sound.playSuccessChime();
@@ -39,6 +51,7 @@ export const ChildProfileModal: React.FC<ChildProfileModalProps> = ({
       name: name.trim() || 'Teman Cerdas',
       age,
       avatar,
+      difficulty,
     });
     onClose();
   };
@@ -91,11 +104,7 @@ export const ChildProfileModal: React.FC<ChildProfileModalProps> = ({
               <button
                 key={a}
                 type="button"
-                onClick={() => {
-                  setAge(a);
-                  sound.playPop();
-                  sound.speak(`Usia ${a} tahun!`);
-                }}
+                onClick={() => handleAgeChange(a)}
                 className={`py-3 rounded-2xl border-3 font-fredoka font-black text-lg transition-transform cursor-pointer ${
                   age === a
                     ? 'bg-amber-400 border-amber-500 text-amber-950 scale-105 shadow-md'
@@ -103,6 +112,38 @@ export const ChildProfileModal: React.FC<ChildProfileModalProps> = ({
                 }`}
               >
                 {a} Th
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Difficulty Level Choice */}
+        <div className="mb-5 text-center">
+          <label className="block text-xs font-bold text-sky-900 mb-2">
+            Tingkat Kesulitan Belajar:
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'EASY' as const, label: 'Mudah', emoji: '🌱', desc: 'Usia 3 Th' },
+              { id: 'MEDIUM' as const, label: 'Menengah', emoji: '⭐', desc: 'Usia 4-5 Th' },
+              { id: 'HARD' as const, label: 'Sulit', emoji: '🏆', desc: 'Usia 6 Th' },
+            ].map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => {
+                  setDifficulty(d.id);
+                  sound.playPop();
+                }}
+                className={`p-2 rounded-2xl border-2 flex flex-col items-center gap-0.5 cursor-pointer transition-transform ${
+                  difficulty === d.id
+                    ? 'bg-amber-100 border-amber-500 text-amber-950 font-black shadow-sm scale-102'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <span className="text-xl">{d.emoji}</span>
+                <span className="text-xs font-bold">{d.label}</span>
+                <span className="text-[10px] text-slate-400">{d.desc}</span>
               </button>
             ))}
           </div>

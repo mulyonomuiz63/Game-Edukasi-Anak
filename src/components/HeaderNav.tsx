@@ -1,12 +1,14 @@
 import React from 'react';
 import { Volume2, VolumeX, Sparkles, Home, Shield, BookOpen } from 'lucide-react';
 import { sound } from '../utils/audio';
-import { ChildProfile, ScreenType } from '../types/game';
+import { ChildProfile, DifficultyLevel, ScreenType } from '../types/game';
 
 interface HeaderNavProps {
   currentScreen: ScreenType;
   starsCount: number;
   profile: ChildProfile;
+  difficulty: DifficultyLevel;
+  onChangeDifficulty: (diff: DifficultyLevel) => void;
   isMuted: boolean;
   onToggleMute: () => void;
   onGoHome: () => void;
@@ -18,6 +20,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   currentScreen,
   starsCount,
   profile,
+  difficulty,
+  onChangeDifficulty,
   isMuted,
   onToggleMute,
   onGoHome,
@@ -56,6 +60,29 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Quick Difficulty Badge Switcher */}
+        <button
+          onClick={() => {
+            const nextDiff: DifficultyLevel =
+              difficulty === 'EASY' ? 'MEDIUM' : difficulty === 'MEDIUM' ? 'HARD' : 'EASY';
+            onChangeDifficulty(nextDiff);
+            sound.playPop();
+            const names = { EASY: 'Mudah', MEDIUM: 'Menengah', HARD: 'Sulit' };
+            sound.speak(`Ganti ke tingkat ${names[nextDiff]}!`);
+          }}
+          className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border text-xs font-black cursor-pointer hover:scale-105 active:scale-95 transition-transform ${
+            difficulty === 'EASY'
+              ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+              : difficulty === 'MEDIUM'
+              ? 'bg-amber-100 border-amber-300 text-amber-900'
+              : 'bg-rose-100 border-rose-300 text-rose-900'
+          }`}
+          title="Klik untuk ganti tingkat kesulitan"
+        >
+          <span>{difficulty === 'EASY' ? '🌱' : difficulty === 'MEDIUM' ? '⭐' : '🏆'}</span>
+          <span>{difficulty === 'EASY' ? 'Mudah' : difficulty === 'MEDIUM' ? 'Menengah' : 'Sulit'}</span>
+        </button>
       </div>
 
       {/* Center: Brand Wordmark (when in game or map) */}

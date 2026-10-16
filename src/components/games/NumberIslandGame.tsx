@@ -1,49 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Check, ArrowRight, RotateCcw } from 'lucide-react';
 import { sound } from '../../utils/audio';
 import { MascotSvg } from '../MascotSvg';
+import { DifficultyLevel } from '../../types/game';
+import { DifficultySelector } from '../DifficultySelector';
 
 interface NumberIslandGameProps {
+  difficulty: DifficultyLevel;
+  onChangeDifficulty: (diff: DifficultyLevel) => void;
   onActivityComplete: (num: number) => void;
   onBackToMap: () => void;
 }
 
-const COUNTING_CHALLENGES = [
-  { item: '🍎', name: 'Apel Merah', count: 3, options: [2, 3, 4] },
-  { item: '🍌', name: 'Pisang Manis', count: 5, options: [4, 5, 6] },
-  { item: '🐟', name: 'Ikan Lincah', count: 4, options: [3, 4, 5] },
-  { item: '🍊', name: 'Jeruk Segar', count: 6, options: [5, 6, 7] },
-  { item: '🍓', name: 'Stroberi Mungil', count: 2, options: [1, 2, 3] },
-  { item: '⭐', name: 'Bintang Terang', count: 7, options: [6, 7, 8] },
-];
+const COUNTING_BY_DIFFICULTY = {
+  EASY: [
+    { item: '🍓', name: 'Stroberi Mungil', count: 2, options: [2, 3] },
+    { item: '🍎', name: 'Apel Manis', count: 3, options: [3, 4] },
+    { item: '🐟', name: 'Ikan Berenang', count: 4, options: [3, 4] },
+    { item: '⭐', name: 'Bintang Terang', count: 3, options: [2, 3] },
+  ],
+  MEDIUM: [
+    { item: '🍎', name: 'Apel Merah', count: 5, options: [4, 5, 6] },
+    { item: '🍊', name: 'Jeruk Segar', count: 6, options: [5, 6, 7] },
+    { item: '🍌', name: 'Pisang Manis', count: 7, options: [6, 7, 8] },
+    { item: '⭐', name: 'Bintang Emas', count: 8, options: [7, 8, 9] },
+  ],
+  HARD: [
+    { item: '🍎', name: 'Apel Merah & Hijau', count: 9, options: [8, 9, 10, 11] },
+    { item: '🐟', name: 'Kawanan Ikan Lincah', count: 10, options: [9, 10, 11, 12] },
+    { item: '🍓', name: 'Keranjang Stroberi', count: 11, options: [10, 11, 12, 13] },
+    { item: '⭐', name: 'Gugusan Bintang', count: 12, options: [11, 12, 13, 14] },
+  ],
+};
 
-const SEQUENCE_ROUNDS = [
-  { full: [1, 2, 3, 4, 5], missingIndex: 2, options: [2, 3, 5] }, // missing 3
-  { full: [2, 3, 4, 5, 6], missingIndex: 3, options: [4, 5, 6] }, // missing 5
-  { full: [4, 5, 6, 7, 8], missingIndex: 2, options: [5, 6, 7] }, // missing 6
-  { full: [6, 7, 8, 9, 10], missingIndex: 3, options: [8, 9, 10] }, // missing 9
-];
+const SEQUENCE_BY_DIFFICULTY = {
+  EASY: [
+    { full: [1, 2, 3, 4], missingIndex: 1, options: [2, 3], label: 'Urutan 1 sampai 4' },
+    { full: [2, 3, 4, 5], missingIndex: 2, options: [3, 4], label: 'Urutan 2 sampai 5' },
+    { full: [1, 2, 3, 4], missingIndex: 2, options: [3, 4], label: 'Urutan 1 sampai 4' },
+  ],
+  MEDIUM: [
+    { full: [2, 3, 4, 5, 6], missingIndex: 3, options: [4, 5, 6], label: 'Urutan 2 sampai 6' },
+    { full: [5, 6, 7, 8, 9], missingIndex: 2, options: [6, 7, 8], label: 'Urutan 5 sampai 9' },
+    { full: [6, 7, 8, 9, 10], missingIndex: 3, options: [8, 9, 10], label: 'Urutan 6 sampai 10' },
+  ],
+  HARD: [
+    { full: [2, 4, 6, 8, 10], missingIndex: 2, options: [5, 6, 7, 8], label: 'Lompat 2 Angka Genap (2, 4, ?, 8, 10)' },
+    { full: [1, 3, 5, 7, 9], missingIndex: 2, options: [4, 5, 6, 7], label: 'Lompat 2 Angka Ganjil (1, 3, ?, 7, 9)' },
+    { full: [10, 9, 8, 7, 6], missingIndex: 2, options: [8, 7, 9, 6], label: 'Hitung Mundur (10, 9, ?, 7, 6)' },
+  ],
+};
 
 export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
+  difficulty,
+  onChangeDifficulty,
   onActivityComplete,
   onBackToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<'COUNT' | 'SEQUENCE' | 'CATCH'>('COUNT');
 
-  // Counting fruit game
+  // Counting challenges per difficulty
+  const countingList = COUNTING_BY_DIFFICULTY[difficulty];
   const [countIndex, setCountIndex] = useState(0);
-  const currentCountRound = COUNTING_CHALLENGES[countIndex];
+  const currentCountRound = countingList[countIndex % countingList.length];
   const [tappedItems, setTappedItems] = useState<number[]>([]);
   const [countSuccess, setCountSuccess] = useState(false);
 
-  // Stepping stones sequence game
+  // Stepping stones sequence challenges per difficulty
+  const sequenceList = SEQUENCE_BY_DIFFICULTY[difficulty];
   const [seqIndex, setSeqIndex] = useState(0);
-  const currentSeq = SEQUENCE_ROUNDS[seqIndex];
+  const currentSeq = sequenceList[seqIndex % sequenceList.length];
   const [seqAnswered, setSeqAnswered] = useState(false);
 
-  // Catch the basket game
-  const [targetCatch] = useState(4);
+  // Target catch by difficulty
+  const targetCatch = difficulty === 'EASY' ? 3 : difficulty === 'MEDIUM' ? 5 : 7;
   const [caughtItems, setCaughtItems] = useState<number[]>([]);
+
+  // Reset states on difficulty change
+  useEffect(() => {
+    setCountIndex(0);
+    setTappedItems([]);
+    setCountSuccess(false);
+    setSeqIndex(0);
+    setSeqAnswered(false);
+    setCaughtItems([]);
+  }, [difficulty]);
 
   // Count item click
   const handleItemTap = (idx: number) => {
@@ -51,7 +92,12 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
     const newTapped = [...tappedItems, idx];
     setTappedItems(newTapped);
     sound.playPop();
-    const indonesianNumbers = ['Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh'];
+
+    const indonesianNumbers = [
+      'Satu', 'Dua', 'Tiga', 'Empat', 'Lima',
+      'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh',
+      'Sebelas', 'Dua belas', 'Tiga belas', 'Empat belas', 'Lima belas'
+    ];
     const numWord = indonesianNumbers[newTapped.length - 1] || `${newTapped.length}`;
     sound.speak(numWord);
   };
@@ -71,7 +117,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
   const handleNextCount = () => {
     setCountSuccess(false);
     setTappedItems([]);
-    setCountIndex((prev) => (prev + 1) % COUNTING_CHALLENGES.length);
+    setCountIndex((prev) => (prev + 1) % countingList.length);
   };
 
   // Stepping stone sequence answer
@@ -84,13 +130,13 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
       onActivityComplete(val);
     } else {
       sound.playBoing();
-      sound.speak('Ayo perhatikan urutan angkanya ya!');
+      sound.speak('Ayo perhatikan pola urutan angkanya ya!');
     }
   };
 
   const handleNextSeq = () => {
     setSeqAnswered(false);
-    setSeqIndex((prev) => (prev + 1) % SEQUENCE_ROUNDS.length);
+    setSeqIndex((prev) => (prev + 1) % sequenceList.length);
   };
 
   // Catch fruit into basket
@@ -100,13 +146,15 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
     setCaughtItems(nextCaught);
     sound.playPop();
 
-    const indonesianNumbers = ['Satu', 'Dua', 'Tiga', 'Empat', 'Lima'];
+    const indonesianNumbers = [
+      'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan'
+    ];
     const numWord = indonesianNumbers[nextCaught.length - 1] || `${nextCaught.length}`;
-    sound.speak(`${numWord} apel di keranjang!`);
+    sound.speak(`${numWord} buah di keranjang!`);
 
     if (nextCaught.length === targetCatch) {
       sound.playSuccessChime();
-      sound.speak(`Hore! Keranjang sudah terisi ${targetCatch} apel!`);
+      sound.speak(`Hore! Keranjang sudah terisi ${targetCatch} apel! Kamu juara berhitung!`);
       onActivityComplete(targetCatch);
     }
   };
@@ -114,7 +162,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 flex flex-col items-center">
       {/* Zone Header Banner */}
-      <div className="w-full bg-linear-to-r from-sky-500 via-blue-500 to-indigo-600 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
+      <div className="w-full bg-linear-to-r from-sky-500 via-blue-500 to-indigo-600 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 text-center sm:text-left">
           <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-3xl shadow-inner">
             🏝️
@@ -124,7 +172,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
               Pulau Angka &amp; Berhitung
             </h2>
             <p className="text-sky-100 text-xs sm:text-sm font-semibold">
-              Kiko si Rubah mengajakmu berhitung buah lezat dan menyusun jembatan angka!
+              Kiko si Rubah mengajakmu berhitung buah lezat dan melengkapi jembatan angka!
             </p>
           </div>
         </div>
@@ -135,6 +183,14 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
           size="sm"
           showSpeech
           speechText="Ayo berhitung bersamaku!"
+        />
+      </div>
+
+      {/* Difficulty Selector Bar */}
+      <div className="w-full flex justify-center mb-4">
+        <DifficultySelector
+          currentDifficulty={difficulty}
+          onChangeDifficulty={onChangeDifficulty}
         />
       </div>
 
@@ -151,7 +207,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
               : 'text-sky-900 hover:bg-sky-200'
           }`}
         >
-          🍎 Hitung Buah
+          🍎 Hitung Benda
         </button>
         <button
           onClick={() => {
@@ -184,8 +240,17 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
       {/* TAB 1: COUNTING OBJECTS */}
       {activeTab === 'COUNT' && (
         <div className="w-full max-w-2xl bg-white/95 border-3 border-sky-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
-          <div className="text-xs font-bold text-sky-800 bg-sky-50 px-3 py-1 rounded-full border border-sky-200 mb-2">
-            Ketuk setiap benda untuk menghitung, lalu pilih angka yang cocok!
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-xs font-bold text-sky-800 bg-sky-50 px-3 py-1 rounded-full border border-sky-200">
+              {difficulty === 'EASY'
+                ? 'Hitung 1-4 dengan Bantuan Angka'
+                : difficulty === 'MEDIUM'
+                ? 'Hitung 5-8 Benda Ceria'
+                : 'Tantangan Hitung 9-12 Benda'}
+            </span>
+            <span className="text-xs font-bold text-slate-500 font-mono">
+              Soal {countIndex + 1} / {countingList.length}
+            </span>
           </div>
 
           <h3 className="text-2xl font-black text-slate-800 mt-2 mb-4">
@@ -193,7 +258,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
           </h3>
 
           {/* Interactive Items to Tap and Count */}
-          <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 my-4 p-6 bg-sky-50/60 rounded-3xl border-2 border-dashed border-sky-200 min-h-[140px] w-full">
+          <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-5 my-4 p-6 bg-sky-50/60 rounded-3xl border-2 border-dashed border-sky-200 min-h-[140px] w-full">
             {Array.from({ length: currentCountRound.count }).map((_, idx) => {
               const isTapped = tappedItems.includes(idx);
               return (
@@ -223,12 +288,12 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
               <p className="text-xs font-bold text-slate-600 mb-3">
                 Pilih angka yang tepat:
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 {currentCountRound.options.map((num) => (
                   <button
                     key={num}
                     onClick={() => handleSelectCountAnswer(num)}
-                    className="w-18 h-20 sm:w-22 sm:h-24 bg-sky-500 hover:bg-sky-400 active:scale-95 text-white font-fredoka font-black text-3xl sm:text-4xl rounded-3xl border-4 border-white shadow-lg transition-transform cursor-pointer"
+                    className="w-16 h-18 sm:w-22 sm:h-24 bg-sky-500 hover:bg-sky-400 active:scale-95 text-white font-fredoka font-black text-3xl sm:text-4xl rounded-3xl border-4 border-white shadow-lg transition-transform cursor-pointer"
                   >
                     {num}
                   </button>
@@ -257,10 +322,10 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
       {activeTab === 'SEQUENCE' && (
         <div className="w-full max-w-2xl bg-white/95 border-3 border-sky-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
           <div className="text-xs font-bold text-sky-800 bg-sky-50 px-3 py-1 rounded-full border border-sky-200 mb-2">
-            Lengkapi batu loncatan yang hilang agar Kiko bisa menyeberang!
+            {currentSeq.label}
           </div>
 
-          <h3 className="text-2xl font-black text-slate-800 mt-2 mb-6">
+          <h3 className="text-2xl font-black text-slate-800 mt-2 mb-4">
             Jembatan Batu Berurutan
           </h3>
 
@@ -292,7 +357,7 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
               <p className="text-xs font-bold text-slate-600 mb-3">
                 Pilih batu angka yang hilang:
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 {currentSeq.options.map((opt) => (
                   <button
                     key={opt}
@@ -324,27 +389,28 @@ export const NumberIslandGame: React.FC<NumberIslandGameProps> = ({
           </div>
 
           <h3 className="text-2xl font-black text-slate-800 mt-2 mb-2">
-            Target: Petik <span className="text-rose-500 font-mono text-3xl">{targetCatch}</span> Apel
+            Target: Petik <span className="text-rose-500 font-mono text-3xl">{targetCatch}</span> Buah
           </h3>
 
-          {/* The Apple Tree */}
+          {/* The Apple Tree with more fruits on higher difficulty */}
           <div className="relative w-full max-w-md h-56 bg-linear-to-b from-green-500 to-emerald-700 rounded-3xl border-4 border-emerald-300 shadow-md flex flex-wrap items-center justify-around p-6 my-4">
             <span className="absolute top-2 left-4 text-xs font-black text-emerald-100 bg-emerald-900/40 px-2 py-0.5 rounded-full">
-              🌳 Pohon Apel Manis
+              🌳 Pohon Apel Ceria
             </span>
-            {[1, 2, 3, 4, 5, 6].map((appleId) => {
+            {Array.from({ length: difficulty === 'EASY' ? 5 : difficulty === 'MEDIUM' ? 8 : 10 }).map((_, i) => {
+              const appleId = i + 1;
               const isHarvested = caughtItems.includes(appleId);
               return (
                 <button
                   key={appleId}
                   onClick={() => handleCatchFruit(appleId)}
                   disabled={isHarvested}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-4xl transition-all cursor-pointer ${
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-3xl sm:text-4xl transition-all cursor-pointer ${
                     isHarvested
                       ? 'opacity-20 scale-75 cursor-not-allowed'
                       : 'hover:scale-125 active:scale-95 animate-bounce'
                   }`}
-                  style={{ animationDelay: `${appleId * 0.2}s` }}
+                  style={{ animationDelay: `${(appleId % 5) * 0.2}s` }}
                 >
                   🍎
                 </button>

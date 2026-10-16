@@ -1,87 +1,202 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, Check, ArrowRight, RotateCcw, Smile, Frown, Sparkles } from 'lucide-react';
 import { sound } from '../../utils/audio';
 import { MascotSvg } from '../MascotSvg';
+import { DifficultyLevel } from '../../types/game';
+import { DifficultySelector } from '../DifficultySelector';
 
 interface EmotionAdventureGameProps {
+  difficulty: DifficultyLevel;
+  onChangeDifficulty: (diff: DifficultyLevel) => void;
   onActivityComplete: (item: string) => void;
   onBackToMap: () => void;
 }
 
-const EMOTIONS = [
+const ALL_EMOTIONS: Record<
+  DifficultyLevel,
   {
-    id: 'happy',
-    name: 'Senang',
-    emoji: '🦁',
-    face: '😄',
-    scenario: 'Singa kecil baru saja mendapatkan bola mainan baru!',
-    question: 'Bagaimana perasaan Singa sekarang?',
-    solution: 'Singa merasa SENANG dan tertawa ceria!',
-    comfortPrompt: 'Beri tos tangan untuk ikut bergembira bersama Singa! ✋',
-    color: 'border-yellow-400 bg-yellow-50',
-  },
-  {
-    id: 'sad',
-    name: 'Sedih',
-    emoji: '🐻',
-    face: '😢',
-    scenario: 'Beruang madunya terjatuh dan es krimnya meleleh...',
-    question: 'Bagaimana perasaan Beruang sekarang?',
-    solution: 'Beruang merasa SEDIH. Ayo kita beri pelukan hangat!',
-    comfortPrompt: 'Ketuk untuk memeluk dan menghibur Beruang! 🫂',
-    color: 'border-sky-400 bg-sky-50',
-  },
-  {
-    id: 'surprised',
-    name: 'Terkejut',
-    emoji: '🐼',
-    face: '😲',
-    scenario: 'Panda melihat kupu-kupu besar hinggap di hidungnya!',
-    question: 'Bagaimana perasaan Panda sekarang?',
-    solution: 'Panda merasa TERKEJUT dengan mata berbinar!',
-    comfortPrompt: 'Tersenyumlah bersama Panda! ✨',
-    color: 'border-purple-400 bg-purple-50',
-  },
-  {
-    id: 'sleepy',
-    name: 'Mengantuk',
-    emoji: '🐱',
-    face: '😴',
-    scenario: 'Kucing manis sudah bermain seharian di kebun bunga...',
-    question: 'Bagaimana perasaan Kucing sekarang?',
-    solution: 'Kucing merasa MENGANTUK dan ingin tidur siang di kasur empuk.',
-    comfortPrompt: 'Katakan "Selamat tidur manis, Kucing!" 🌙',
-    color: 'border-indigo-400 bg-indigo-50',
-  },
-];
+    id: string;
+    name: string;
+    emoji: string;
+    face: string;
+    scenario: string;
+    question: string;
+    solution: string;
+    comfortPrompt: string;
+    color: string;
+  }[]
+> = {
+  EASY: [
+    {
+      id: 'happy',
+      name: 'Senang',
+      emoji: '🦁',
+      face: '😄',
+      scenario: 'Singa kecil baru saja mendapatkan bola mainan baru!',
+      question: 'Bagaimana perasaan Singa sekarang?',
+      solution: 'Singa merasa SENANG dan tertawa ceria!',
+      comfortPrompt: 'Beri tos tangan untuk ikut bergembira bersama Singa! ✋',
+      color: 'border-yellow-400 bg-yellow-50',
+    },
+    {
+      id: 'sad',
+      name: 'Sedih',
+      emoji: '🐻',
+      face: '😢',
+      scenario: 'Beruang madunya terjatuh dan es krimnya meleleh...',
+      question: 'Bagaimana perasaan Beruang sekarang?',
+      solution: 'Beruang merasa SEDIH. Ayo kita beri pelukan hangat!',
+      comfortPrompt: 'Ketuk untuk memeluk dan menghibur Beruang! 🫂',
+      color: 'border-sky-400 bg-sky-50',
+    },
+  ],
+  MEDIUM: [
+    {
+      id: 'happy',
+      name: 'Senang',
+      emoji: '🦁',
+      face: '😄',
+      scenario: 'Singa kecil baru saja mendapatkan bola mainan baru!',
+      question: 'Bagaimana perasaan Singa sekarang?',
+      solution: 'Singa merasa SENANG dan tertawa ceria!',
+      comfortPrompt: 'Beri tos tangan untuk ikut bergembira bersama Singa! ✋',
+      color: 'border-yellow-400 bg-yellow-50',
+    },
+    {
+      id: 'sad',
+      name: 'Sedih',
+      emoji: '🐻',
+      face: '😢',
+      scenario: 'Beruang madunya terjatuh dan es krimnya meleleh...',
+      question: 'Bagaimana perasaan Beruang sekarang?',
+      solution: 'Beruang merasa SEDIH. Ayo kita beri pelukan hangat!',
+      comfortPrompt: 'Ketuk untuk memeluk dan menghibur Beruang! 🫂',
+      color: 'border-sky-400 bg-sky-50',
+    },
+    {
+      id: 'surprised',
+      name: 'Terkejut',
+      emoji: '🐼',
+      face: '😲',
+      scenario: 'Panda melihat kupu-kupu besar hinggap di hidungnya!',
+      question: 'Bagaimana perasaan Panda sekarang?',
+      solution: 'Panda merasa TERKEJUT dengan mata berbinar!',
+      comfortPrompt: 'Tersenyumlah bersama Panda! ✨',
+      color: 'border-purple-400 bg-purple-50',
+    },
+    {
+      id: 'sleepy',
+      name: 'Mengantuk',
+      emoji: '🐱',
+      face: '😴',
+      scenario: 'Kucing manis sudah bermain seharian di kebun bunga...',
+      question: 'Bagaimana perasaan Kucing sekarang?',
+      solution: 'Kucing merasa MENGANTUK dan ingin tidur di kasur empuk.',
+      comfortPrompt: 'Katakan "Selamat tidur manis, Kucing!" 🌙',
+      color: 'border-indigo-400 bg-indigo-50',
+    },
+  ],
+  HARD: [
+    {
+      id: 'happy',
+      name: 'Senang',
+      emoji: '🦁',
+      face: '😄',
+      scenario: 'Singa kecil baru saja menyelesaikan menara balok yang tinggi!',
+      question: 'Bagaimana perasaan Singa sekarang?',
+      solution: 'Singa merasa SENANG dan bangga atas karyanya!',
+      comfortPrompt: 'Tepuk tangan meriah untuk Singa! 👏',
+      color: 'border-yellow-400 bg-yellow-50',
+    },
+    {
+      id: 'sad',
+      name: 'Sedih',
+      emoji: '🐻',
+      face: '😢',
+      scenario: 'Beruang tersandung akar pohon saat sedang berlari...',
+      question: 'Bagaimana perasaan Beruang sekarang?',
+      solution: 'Beruang merasa SEDIH dan butuh pertolongan sahabat.',
+      comfortPrompt: 'Bantu obati luka kecil Beruang dengan plester ramah! 🩹',
+      color: 'border-sky-400 bg-sky-50',
+    },
+    {
+      id: 'angry',
+      name: 'Marah',
+      emoji: '🦊',
+      face: '😠',
+      scenario: 'Mainan puzzle Kiko terinjak dan tercecer berantakan.',
+      question: 'Bagaimana perasaan Kiko sekarang?',
+      solution: 'Kiko merasa KESAL/MARAH. Tarik napas dalam-dalam bersama Kiko.',
+      comfortPrompt: 'Tarik napas lembut... 1, 2, 3... Hembuskan bersama Kiko! 💨',
+      color: 'border-rose-400 bg-rose-50',
+    },
+    {
+      id: 'shy',
+      name: 'Khawatir/Malu',
+      emoji: '🐰',
+      face: '🥺',
+      scenario: 'Kiki baru pertama kali tampil menyanyi di panggung sekolah.',
+      question: 'Bagaimana perasaan Kiki sekarang?',
+      solution: 'Kiki merasa KHAWATIR/MALU. Kita beri semangat ya!',
+      comfortPrompt: 'Katakan: "Kiki pasti bisa, kami mendukungmu!" 🌟',
+      color: 'border-pink-400 bg-pink-50',
+    },
+  ],
+};
 
-const SHADOW_ANIMALS = [
-  { id: 'cat', name: 'Kucing', emoji: '🐱', shadowClass: 'contrast-200 brightness-0 opacity-80' },
-  { id: 'elephant', name: 'Gajah', emoji: '🐘', shadowClass: 'contrast-200 brightness-0 opacity-80' },
-  { id: 'penguin', name: 'Pinguin', emoji: '🐧', shadowClass: 'contrast-200 brightness-0 opacity-80' },
-  { id: 'monkey', name: 'Monyet', emoji: '🐵', shadowClass: 'contrast-200 brightness-0 opacity-80' },
-];
+const ALL_SHADOWS: Record<DifficultyLevel, { id: string; name: string; emoji: string }[]> = {
+  EASY: [
+    { id: 'cat', name: 'Kucing', emoji: '🐱' },
+    { id: 'elephant', name: 'Gajah', emoji: '🐘' },
+  ],
+  MEDIUM: [
+    { id: 'cat', name: 'Kucing', emoji: '🐱' },
+    { id: 'elephant', name: 'Gajah', emoji: '🐘' },
+    { id: 'penguin', name: 'Pinguin', emoji: '🐧' },
+    { id: 'monkey', name: 'Monyet', emoji: '🐵' },
+  ],
+  HARD: [
+    { id: 'cat', name: 'Kucing', emoji: '🐱' },
+    { id: 'elephant', name: 'Gajah', emoji: '🐘' },
+    { id: 'penguin', name: 'Pinguin', emoji: '🐧' },
+    { id: 'monkey', name: 'Monyet', emoji: '🐵' },
+    { id: 'deer', name: 'Rusa', emoji: '🦌' },
+    { id: 'owl', name: 'Burung Hantu', emoji: '🦉' },
+  ],
+};
 
 export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
+  difficulty,
+  onChangeDifficulty,
   onActivityComplete,
   onBackToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<'EMOTION' | 'SHADOW' | 'PUZZLE'>('EMOTION');
 
-  // Emotion scenario game
+  const emotionsList = ALL_EMOTIONS[difficulty];
   const [emotionIndex, setEmotionIndex] = useState(0);
-  const currentEmotion = EMOTIONS[emotionIndex];
+  const currentEmotion = emotionsList[emotionIndex % emotionsList.length];
   const [emotionSolved, setEmotionSolved] = useState(false);
   const [comfortGiven, setComfortGiven] = useState(false);
 
-  // Shadow match game
+  const shadowList = ALL_SHADOWS[difficulty];
   const [targetShadowIdx, setTargetShadowIdx] = useState(0);
-  const currentTargetShadow = SHADOW_ANIMALS[targetShadowIdx];
+  const currentTargetShadow = shadowList[targetShadowIdx % shadowList.length];
   const [shadowSolved, setShadowSolved] = useState(false);
 
-  // 4-piece tile puzzle game
-  const [puzzleTiles, setPuzzleTiles] = useState<number[]>([3, 1, 4, 2]); // scrambled
+  // Puzzle tiles state
+  const [puzzleTiles, setPuzzleTiles] = useState<number[]>([3, 1, 4, 2]);
   const [isPuzzleSolved, setIsPuzzleSolved] = useState(false);
+
+  useEffect(() => {
+    setEmotionIndex(0);
+    setEmotionSolved(false);
+    setComfortGiven(false);
+    setTargetShadowIdx(0);
+    setShadowSolved(false);
+    setPuzzleTiles([3, 1, 4, 2]);
+    setIsPuzzleSolved(false);
+  }, [difficulty]);
 
   // Handle emotion answer
   const handleSelectEmotion = (chosenId: string) => {
@@ -92,7 +207,7 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
       onActivityComplete(currentEmotion.name);
     } else {
       sound.playBoing();
-      sound.speak('Perhatikan raut wajahnya ya, apakah ia sedang tersenyum atau sedih?');
+      sound.speak('Perhatikan raut wajahnya ya, apakah ia sedang tersenyum, sedih, atau kesal?');
     }
   };
 
@@ -105,7 +220,7 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
   const handleNextEmotion = () => {
     setEmotionSolved(false);
     setComfortGiven(false);
-    setEmotionIndex((prev) => (prev + 1) % EMOTIONS.length);
+    setEmotionIndex((prev) => (prev + 1) % emotionsList.length);
   };
 
   // Shadow match answer
@@ -123,14 +238,13 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
 
   const handleNextShadow = () => {
     setShadowSolved(false);
-    setTargetShadowIdx((prev) => (prev + 1) % SHADOW_ANIMALS.length);
+    setTargetShadowIdx((prev) => (prev + 1) % shadowList.length);
   };
 
-  // Swap tiles in 4-piece puzzle
+  // Swap tiles in puzzle
   const handleTileClick = (index: number) => {
     sound.playPop();
     const updated = [...puzzleTiles];
-    // swap with next or wrap around
     const nextIdx = (index + 1) % 4;
     const temp = updated[index];
     updated[index] = updated[nextIdx];
@@ -148,7 +262,7 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 flex flex-col items-center">
       {/* Zone Header Banner */}
-      <div className="w-full bg-linear-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
+      <div className="w-full bg-linear-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 text-center sm:text-left">
           <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-3xl shadow-inner">
             🦊
@@ -169,6 +283,14 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
           size="sm"
           showSpeech
           speechText="Yuk bantu sahabat kita!"
+        />
+      </div>
+
+      {/* Difficulty Selector Bar */}
+      <div className="w-full flex justify-center mb-4">
+        <DifficultySelector
+          currentDifficulty={difficulty}
+          onChangeDifficulty={onChangeDifficulty}
         />
       </div>
 
@@ -218,8 +340,17 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
       {/* TAB 1: EMOTION RECOGNITION & EMPATHY */}
       {activeTab === 'EMOTION' && (
         <div className="w-full max-w-2xl bg-white/95 border-3 border-amber-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
-          <div className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-2">
-            Kenali ekspresi wajah hewan dan tunjukkan rasa sayangmu!
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              {difficulty === 'EASY'
+                ? '2 Emosi Dasar (Senang & Sedih)'
+                : difficulty === 'MEDIUM'
+                ? '4 Emosi Ceria'
+                : 'Tantangan Emosi & Empati'}
+            </span>
+            <span className="text-xs font-bold text-slate-500 font-mono">
+              Cerita {emotionIndex + 1} / {emotionsList.length}
+            </span>
           </div>
 
           {/* Animal Card */}
@@ -242,8 +373,12 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
               <p className="text-xs font-bold text-slate-600 mb-3">
                 Pilih perasaan yang tepat:
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {EMOTIONS.map((em) => (
+              <div
+                className={`grid gap-2.5 ${
+                  emotionsList.length <= 2 ? 'grid-cols-2 max-w-xs mx-auto' : 'grid-cols-2 sm:grid-cols-4'
+                }`}
+              >
+                {emotionsList.map((em) => (
                   <button
                     key={em.id}
                     onClick={() => handleSelectEmotion(em.id)}
@@ -287,8 +422,17 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
       {/* TAB 2: SHADOW MATCHING */}
       {activeTab === 'SHADOW' && (
         <div className="w-full max-w-2xl bg-white/95 border-3 border-amber-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
-          <div className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-2">
-            Perhatikan bayangan misterius, tebak hewan apakah ini?
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              {difficulty === 'EASY'
+                ? 'Pilih dari 2 Satwa Sahabat'
+                : difficulty === 'MEDIUM'
+                ? 'Pilih dari 4 Satwa'
+                : 'Tantangan 6 Bayangan Misterius'}
+            </span>
+            <span className="text-xs font-bold text-slate-500 font-mono">
+              Soal {targetShadowIdx + 1} / {shadowList.length}
+            </span>
           </div>
 
           <h3 className="text-2xl font-black text-slate-800 mt-2 mb-2">
@@ -312,15 +456,15 @@ export const EmotionAdventureGame: React.FC<EmotionAdventureGameProps> = ({
               <p className="text-xs font-bold text-slate-600 mb-3">
                 Siapakah pemilik bayangan di atas?
               </p>
-              <div className="flex justify-center gap-4">
-                {SHADOW_ANIMALS.map((a) => (
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
+                {shadowList.map((a) => (
                   <button
                     key={a.id}
                     onClick={() => handlePickAnimal(a.id)}
-                    className="w-18 h-20 sm:w-22 sm:h-24 bg-amber-100 hover:bg-amber-200 active:scale-95 border-3 border-amber-300 rounded-3xl flex flex-col items-center justify-center gap-1 shadow-md cursor-pointer transition-transform"
+                    className="w-16 h-18 sm:w-20 sm:h-22 bg-amber-100 hover:bg-amber-200 active:scale-95 border-3 border-amber-300 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-md cursor-pointer transition-transform"
                   >
-                    <span className="text-4xl">{a.emoji}</span>
-                    <span className="text-xs font-bold text-slate-800">{a.name}</span>
+                    <span className="text-3xl sm:text-4xl">{a.emoji}</span>
+                    <span className="text-[11px] font-bold text-slate-800 truncate max-w-full">{a.name}</span>
                   </button>
                 ))}
               </div>

@@ -1,15 +1,24 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Star, Heart, Award } from 'lucide-react';
 import { sound } from '../utils/audio';
-import { ScreenType, LearningStats } from '../types/game';
+import { ScreenType, LearningStats, DifficultyLevel } from '../types/game';
+import { DifficultySelector } from './DifficultySelector';
 
 interface WorldMapProps {
   stats: LearningStats;
+  difficulty: DifficultyLevel;
+  onChangeDifficulty: (diff: DifficultyLevel) => void;
   onSelectZone: (zone: ScreenType) => void;
   onOpenStickers: () => void;
 }
 
-export const WorldMap: React.FC<WorldMapProps> = ({ stats, onSelectZone, onOpenStickers }) => {
+export const WorldMap: React.FC<WorldMapProps> = ({
+  stats,
+  difficulty,
+  onChangeDifficulty,
+  onSelectZone,
+  onOpenStickers,
+}) => {
   const zones = [
     {
       id: 'ZONE_ABC' as ScreenType,
@@ -85,9 +94,17 @@ export const WorldMap: React.FC<WorldMapProps> = ({ stats, onSelectZone, onOpenS
             Pilih Tempat Petualanganmu Hari Ini!
           </span>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-fredoka font-black text-slate-800">
+        <h2 className="text-2xl sm:text-4xl font-fredoka font-black text-slate-800 mb-3">
           Peta Dunia Belajar Kiko &amp; Kiki
         </h2>
+
+        {/* Difficulty Level Switcher on World Map */}
+        <div className="flex justify-center mt-2">
+          <DifficultySelector
+            currentDifficulty={difficulty}
+            onChangeDifficulty={onChangeDifficulty}
+          />
+        </div>
       </div>
 
       {/* Panoramic Illustrated Visual Map Card */}
